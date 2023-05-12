@@ -59,9 +59,9 @@ class Board:
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente."""
         res = []
-        if col != 0: 
+        if row != 0: 
             res += [self.get_value(row - 1, col)]
-        if col != 9:
+        if row != 9:
             res += [self.get_value(row + 1, col)]
         return res
 
@@ -93,7 +93,7 @@ class Board:
         self.board[row] = [self.WATER if value == self.UNKNOWN else value for value in self.board[row]]
     
     def fill_ships_row(self, row: int):
-        self.board[row] = [self.PART if value == self.UNKNOWN else value for value in self.board[row]]
+        self.board[row] = [self.assign(row, i, PART) if self.board[row][i] == self.UNKNOWN else self.board[row][i] for i in range(0,10)]
 
     def fill_water_col(self, col: int):
         for i in range(10):
@@ -103,7 +103,7 @@ class Board:
     def fill_ships_col(self, col: int):
         for i in range(10):
             if self.board[i][col] == self.UNKNOWN:
-                self.board[i][col] = self.PART
+                self.assign(i,col,PART)
     
     def wetDiagonals(self, row: int, col: int):
         if col != 0: 
@@ -133,6 +133,9 @@ class Board:
         return
     
     def assign(self,  row: int, col: int, type: str):
+        print("assigned", row, col, type)
+        if row < 0 or row > 9 or col < 0 or col > 9:
+            return
         if self.board[row][col] != UNKNOWN and self.board[row][col] != type:
             return False
         if type != WATER and type != HINTWATER:
