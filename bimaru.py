@@ -6,20 +6,8 @@
 # 00000 Nome1
 # 00000 Nome2
 
-WATER = "w"
-HINTWATER = "W"
-CIRCLE = "C"
-TOP = "T"
-MIDDLE = "M"
-BOTTOM = "B"
-LEFT = "L"
-RIGHT = "R"
-UNKNOWN = " "
-PART = "X"
-
-
 import numpy as np
-import sys
+from sys import stdin
 from search import (
     Problem,
     Node,
@@ -32,7 +20,7 @@ from search import (
 
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
-    WATER = "w"
+    WATER = " "
     HINTWATER = "W"
     CIRCLE = "C"
     TOP = "T"
@@ -40,8 +28,8 @@ class Board:
     BOTTOM = "B"
     LEFT = "L"
     RIGHT = "R"
-    UNKNOWN = " "
-    PART = "X"
+    UNKNOWN = "?"
+    PART = "x"
 
     def __init__(self):
         self.board = np.full((10, 10), self.UNKNOWN)
@@ -93,7 +81,9 @@ class Board:
         self.board[row] = [self.WATER if value == self.UNKNOWN else value for value in self.board[row]]
     
     def fill_ships_row(self, row: int):
-        self.board[row] = [self.assign(row, i, PART) if self.board[row][i] == self.UNKNOWN else self.board[row][i] for i in range(0,10)]
+        for c in range(1,10):
+            if self.board[row][c] == self.UNKNOWN:
+                self.assign(row, c, self.PART)
 
     def fill_water_col(self, col: int):
         for i in range(10):
@@ -103,66 +93,65 @@ class Board:
     def fill_ships_col(self, col: int):
         for i in range(10):
             if self.board[i][col] == self.UNKNOWN:
-                self.assign(i,col,PART)
+                self.assign(i,col, self.PART)
     
     def wetDiagonals(self, row: int, col: int):
         if col != 0: 
             if row != 0:
-                self.board[row-1][col-1] = WATER
+                self.board[row-1][col-1] = self.WATER
             if row != 9:
-                self.board[row+1][col-1] = WATER
+                self.board[row+1][col-1] = self.WATER
         if col != 9:
             if row != 0:
-                self.board[row-1][col+1] = WATER
+                self.board[row-1][col+1] = self.WATER
             if row != 9:
-                self.board[row+1][col+1] = WATER
+                self.board[row+1][col+1] = self.WATER
         return 
     
     def wetVerticaly(self, row: int, col: int):
         if row != 0: 
-            self.board[row-1][col] = WATER
+            self.board[row-1][col] = self.WATER
         if row != 9:
-            self.board[row+1][col] = WATER
+            self.board[row+1][col] = self.WATER
         return
     
     def wetSideways(self, row: int, col: int):
         if col != 0: 
-            self.board[row][col-1] = WATER
+            self.board[row][col-1] = self.WATER
         if col != 9:
-            self.board[row][col+1] = WATER
+            self.board[row][col+1] = self.WATER
         return
     
     def assign(self,  row: int, col: int, type: str):
-        print("assigned", row, col, type)
         if row < 0 or row > 9 or col < 0 or col > 9:
             return
-        if self.board[row][col] != UNKNOWN and self.board[row][col] != type:
+        if self.board[row][col] != self.UNKNOWN and self.board[row][col] != type:
             return False
-        if type != WATER and type != HINTWATER:
+        if type != self.WATER and type != self.HINTWATER:
             self.wetDiagonals(row, col)
-        if type == CIRCLE:
+        if type == self.CIRCLE:
             self.wetVerticaly(row, col)
             self.wetSideways(row, col)
-        if type == TOP:
+        if type == self.TOP:
             self.wetSideways(row, col)
             if row != 0: 
-                self.set_value(row - 1, col, WATER)
-            self.assign(row+1, col, PART)
-        if type == BOTTOM:
+                self.set_value(row - 1, col, self.WATER)
+            self.assign(row+1, col, self.PART)
+        if type == self.BOTTOM:
             self.wetSideways(row, col)
             if row != 9: 
-                self.set_value(row + 1, col, WATER)
-            self.assign(row-1, col, PART)
-        if type == RIGHT:
+                self.set_value(row + 1, col, self.WATER)
+            self.assign(row-1, col, self.PART)
+        if type == self.RIGHT:
             self.wetVerticaly(row, col)
             if col != 9: 
-                self.set_value(row, col + 1, WATER)
-            self.assign(row, col-1, PART)
-        if type == LEFT:
+                self.set_value(row, col + 1, self.WATER)
+            self.assign(row, col-1, self.PART)
+        if type == self.LEFT:
             self.wetVerticaly(row, col)
             if col != 0: 
-                self.set_value(row, col - 1, WATER)
-            self.assign(row, col+1, PART)
+                self.set_value(row, col - 1, self.WATER)
+            self.assign(row, col+1, self.PART)
         self.set_value(row, col, type)
 
     def lineProcesser(self):
@@ -170,32 +159,30 @@ class Board:
         for i in range(0,10):
             rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
             for j in range(0,10):
-                if self.board[i][j] == UNKNOWN:
+                if self.board[i][j] == self.UNKNOWN:
                     rowEmpty += 1
-                elif self.board[i][j] != WATER and self.board[i][j] != HINTWATER:
+                elif self.board[i][j] != self.WATER and self.board[i][j] != self.HINTWATER:
                     rowShips += 1
-                if self.board[j][i] == UNKNOWN:
+                if self.board[j][i] == self.UNKNOWN:
                     colEmpty += 1
-                elif self.board[j][i] != WATER and self.board[j][i] != HINTWATER:
+                elif self.board[j][i] != self.WATER and self.board[j][i] != self.HINTWATER:
                     colShips += 1
-
-                if self.board[i][j] == MIDDLE:
+                if self.board[i][j] == self.MIDDLE:
                     adjH = self.adjacent_horizontal_values(i,j)
                     adjV = self.adjacent_vertical_values(i,j)
-                    if WATER in adjH or HINTWATER in adjH or len(adjH) == 1:
-                        if UNKNOWN in adjV:
+                    if self.WATER in adjH or self.HINTWATER in adjH or len(adjH) == 1:
+                        if self.UNKNOWN in adjV:
                             print(adjV)
                             modified = True
-                            self.assign(i-1,j,PART)
-                            self.assign(i+1,j,PART)
+                            self.assign(i-1,j, self.PART)
+                            self.assign(i+1,j, self.PART)
                     
-                    if WATER in adjV or HINTWATER in adjV or len(adjV) == 1:
-                        if UNKNOWN in adjH:
+                    if self.WATER in adjV or self.HINTWATER in adjV or len(adjV) == 1:
+                        if self.UNKNOWN in adjH:
                             print(adjH)
                             modified = True
-                            self.assign(i,j-1,PART)
-                            self.assign(i,j+1,PART)
-
+                            self.assign(i,j-1, self.PART)
+                            self.assign(i,j+1, self.PART)
             if rowShips == self.row_values[i] and rowEmpty != 0:
                 modified = True
                 self.fill_water_row(i)
@@ -217,9 +204,7 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        filename = sys.argv[1]
-        with open(filename) as f:
-            lines = f.readlines()
+        lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
         board.col_values = list(map(int, lines[1].split()[1:]))
