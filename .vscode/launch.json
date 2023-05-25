@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "program.py",
+            "console": "integratedTerminal",
+            "args": [
+                "<t1.txt"
+            ],
+            "justMyCode": true
+        }
+    ]
+}

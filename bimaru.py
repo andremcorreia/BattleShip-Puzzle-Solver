@@ -20,25 +20,36 @@ from search import (
 
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
-    WATER = " "
-    HINTWATER = "W"
-    CIRCLE = "C"
-    TOP = "T"
-    MIDDLE = "M"
-    BOTTOM = "B"
-    LEFT = "L"
-    RIGHT = "R"
-    UNKNOWN = "?"
-    PART = "x"
+    WATER       = " "
+    HINTWATER   = "W"
+    CIRCLE      = "C"
+    TOP         = "T"
+    MIDDLE      = "M"
+    BOTTOM      = "B"
+    LEFT        = "L"
+    RIGHT       = "R"
+    UNKNOWN     = "?"
+    PART        = "x"
+    SHIP_TILES  = [PART,RIGHT,LEFT,BOTTOM,MIDDLE,TOP,CIRCLE]
+    WATER_TILES = [WATER,HINTWATER]
+    VERTICAL    = "VERTICAL"
+    HORIZONTAL  = "HORIZONTAL"
 
     def __init__(self):
         self.board = np.full((10, 10), self.UNKNOWN)
         self.row_values = []
         self.col_values = []
         self.ships = [4, 3, 2, 1]
+        self.isLegal = True
+
+    def isShip(self, row: int, col: int):
+        return self.board[row][col] in self.SHIP_TILES
+    
+    def isWater(self, row: int, col: int):
+        return self.board[row][col] in self.WATER_TILES
 
     def get_value(self, row: int, col: int) -> str:
-        return self.board[row][col]        
+        return self.board[row][col].upper()        
     
     def set_value(self, row: int, col: int, value) -> str:
         self.board[row][col] = value
@@ -155,49 +166,141 @@ class Board:
         self.set_value(row, col, type)
 
     def lineProcesser(self):
+        print(self.board)
         modified = False
         for i in range(0,10):
             rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
             for j in range(0,10):
+
+                #Part Definer
+                if self.board[i][j] == self.PART and self.UNKNOWN not in self.adjacent_horizontal_values(i,j) + self.adjacent_vertical_values(i,j):
+                    top     = i == 0 or self.isWater(i-1, j)
+                    bottom  = i == 9 or self.isWater(i+1, j)
+                    right   = j == 9 or self.isWater(i, j+1)
+                    left    = j == 0 or self.isWater(i, j-1)
+                    if top and not bottom:
+                        self.board[i][j] = self.TOP
+                    elif bottom and not top:
+                        self.board[i][j] = self.BOTTOM
+                    elif right and not left:
+                        self.board[i][j] = self.RIGHT 
+                    elif left and not right:
+                        self.board[i][j] = self.LEFT
+                    elif left and right and top and bottom:
+                        self.board[i][j] = self.CIRCLE
+                    elif (left and right) or (top and bottom):
+                        self.board[i][j] = self.MIDDLE
+                #end
+
+                #Row
                 if self.board[i][j] == self.UNKNOWN:
                     rowEmpty += 1
-                elif self.board[i][j] != self.WATER and self.board[i][j] != self.HINTWATER:
+                elif self.board[i][j] not in self.WATER_TILES:
                     rowShips += 1
+                #Col
                 if self.board[j][i] == self.UNKNOWN:
                     colEmpty += 1
-                elif self.board[j][i] != self.WATER and self.board[j][i] != self.HINTWATER:
+                elif self.board[j][i] not in self.WATER_TILES:
                     colShips += 1
+
+                # M Solver
                 if self.board[i][j] == self.MIDDLE:
                     adjH = self.adjacent_horizontal_values(i,j)
                     adjV = self.adjacent_vertical_values(i,j)
                     if self.WATER in adjH or self.HINTWATER in adjH or len(adjH) == 1:
                         if self.UNKNOWN in adjV:
-                            print(adjV)
                             modified = True
                             self.assign(i-1,j, self.PART)
                             self.assign(i+1,j, self.PART)
                     
                     if self.WATER in adjV or self.HINTWATER in adjV or len(adjV) == 1:
                         if self.UNKNOWN in adjH:
-                            print(adjH)
                             modified = True
                             self.assign(i,j-1, self.PART)
                             self.assign(i,j+1, self.PART)
+
+            # Filler Row    
             if rowShips == self.row_values[i] and rowEmpty != 0:
                 modified = True
                 self.fill_water_row(i)
             elif rowShips + rowEmpty == self.row_values[i] and rowEmpty != 0:
                 modified = True
                 self.fill_ships_row(i)
+
+            print(self.board)
+            # Filler Col  
             if colShips == self.col_values[i] and colEmpty != 0:
                 modified = True
                 self.fill_water_col(i)
-            elif colShips + colEmpty == self.col_values[i]  and colEmpty != 0:
+            elif colShips + colEmpty == self.col_values[i]  and colShips != 0:
+                print("filling col", i)
                 modified = True
                 self.fill_ships_col(i)
+            print(self.board)
+
+            #Illegal check
+            #if self.row_values[i] <= rowShips + rowEmpty:
+            #    self.isLegal = False
+            #if self.col_values[i] <= colShips + colEmpty:
+            #    self.isLegal = False
+            print("lap")
+            #print(self.isLegal)
+            
         if modified:
             self.lineProcesser()
 
+    def shipCount(self):
+        self.ships = [4, 3, 2, 1]
+        for row in range(0,10):
+            for col in range(0,10):
+                if self.get_value(row,col) == self.CIRCLE.upper():
+                    self.ships[0] -= 1 
+                if self.get_value(row,col) == self.LEFT.upper():
+                    i = 1
+                    while (not self.isWater(row,col + i)):
+                        i += 1
+                    self.ships[i - 1] -= 1
+                if self.get_value(row,col) == self.TOP.upper():
+                    i = 1
+                    while (not self.isWater(row + i,col)):
+                        i += 1
+                    self.ships[i - 1] -= 1
+    
+    def guess_finder(self, boatSize: int):
+        if(not self.isLegal):
+            return []
+        res = []
+        for i in range(0, 10):
+            for j in range(0, 10):
+                #Check rows for available spots
+                if self.get_value(i,j) in [self.UNKNOWN, self.PART]:
+                    c, reached = 1, False
+                    while (self.get_value(i,j + c) in [self.UNKNOWN, self.PART] and not reached):
+                        c += 1
+                        if c >= boatSize:
+                            reached = True
+                            res += [[i,j,self.HORIZONTAL,boatSize]]
+                #Check Collums for available spots
+                if self.get_value(j,i) in [self.UNKNOWN, self.PART]:
+                    c, reached = 1, False
+                    while (self.get_value(j + c,i) in [self.UNKNOWN, self.PART] and not reached):
+                        c += 1
+                        if c >= boatSize:
+                            reached = True
+                            res += [[j,i,self.VERTICAL,boatSize]]
+        return res
+    
+    def addShip(self, shipInfo):
+        if (shipInfo[2] == self.HORIZONTAL):
+            for i in range(0, shipInfo[3] - 1):
+                self.assign(shipInfo[0], shipInfo[1] + i, self.PART)
+        if (shipInfo[2] == self.VERTICAL):
+            for i in range(0, shipInfo[3] - 1):
+                self.assign(shipInfo[0] + i, shipInfo[1], self.PART)
+
+    def print_board(self):
+        print(self.board)
+        
     @staticmethod
     def parse_instance():
         """Lê o test do standard input (stdin) que é passado como argumento
@@ -230,37 +333,72 @@ class BimaruState:
     # TODO: outros metodos da classe
 
 class Bimaru(Problem):
-    def __init__(self, board: Board):
-        originalState = BimaruState(board)
-        print("input")
-        print(board.board)
-        board.lineProcesser()
-        print("simplified")
-        print(board.board)
-        print(board.row_values)
-        print(board.col_values)
-        pass
+    def __init__(self, originalBoard: Board):
+        self.initial = BimaruState(originalBoard)
+        self.initial.board.lineProcesser()
+        self.originalBoard = originalBoard
+
+        #print("input")
+        #print(originalBoard.board)
+        #originalBoard.lineProcesser()
+        #print("simplified")
+        #originalBoard.print_board()
+        #print(originalBoard.row_values) 
+        #print(originalBoard.col_values)
+#
+#
+        #originalBoard.shipCount()
+        #print("remaining ships:", originalBoard.ships)
+        #if (originalBoard.ships[3] > 0):
+        #    print("next guesses:", originalBoard.guess_finder(4))
+        #elif (originalBoard.ships[2] > 0):
+        #    print("next guesses:", originalBoard.guess_finder(3))    
+        #elif (originalBoard.ships[1] > 0):
+        #    print("next guesses:", originalBoard.guess_finder(2))  
+        #elif (originalBoard.ships[0] > 0):
+        #    print("next guesses:", originalBoard.guess_finder(1))                          
+        
 
     def actions(self, state: BimaruState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-        # TODO
-        pass
+        state.board.shipCount()
+        print("remaining ships:", state.board.ships)
+        print(state.board.board)
+        if (state.board.ships[3] > 0):
+            print(state.board.guess_finder(4))
+            return state.board.guess_finder(4) 
+        elif (state.board.ships[2] > 0):
+            print(state.board.guess_finder(3))
+            return state.board.guess_finder(3)     
+        elif (state.board.ships[1] > 0):
+            print(state.board.guess_finder(2))
+            return state.board.guess_finder(2)  
+        elif (state.board.ships[0] > 0):
+            print(state.board.guess_finder(1))
+            return state.board.guess_finder(1) 
 
     def result(self, state: BimaruState, action):
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        # TODO
-        pass
+        newState = BimaruState(state.board)
+        newState.board.addShip(action)
+        newState.board.lineProcesser()
+        return newState
+        # [row,col,sentido]
+        # new state
+        # addShip(row,col,direction)
+        # line process
+        # remove from action list
+        # return state        
 
     def goal_test(self, state: BimaruState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
-        # TODO
-        pass
+        return state.board.ships == [0,0,0,0] and state.board.isLegal
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -277,4 +415,7 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     originalBoard = Board.parse_instance()
     game = Bimaru(originalBoard)
-    pass
+    print("yay1")
+    print(depth_first_tree_search(game).state)
+    print("yay2")
+
