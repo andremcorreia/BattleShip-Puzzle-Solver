@@ -6,6 +6,7 @@
 # 00000 Nome1
 # 00000 Nome2
 
+import copy
 import numpy as np
 from sys import stdin
 from search import (
@@ -41,6 +42,7 @@ class Board:
         self.col_values = []
         self.ships = [4, 3, 2, 1]
         self.isLegal = True
+        self.times = 0
 
     def isShip(self, row: int, col: int):
         return self.board[row][col] in self.SHIP_TILES
@@ -166,7 +168,6 @@ class Board:
         self.set_value(row, col, type)
 
     def lineProcesser(self):
-        print(self.board)
         modified = False
         for i in range(0,10):
             rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
@@ -227,26 +228,23 @@ class Board:
                 modified = True
                 self.fill_ships_row(i)
 
-            print(self.board)
             # Filler Col  
             if colShips == self.col_values[i] and colEmpty != 0:
                 modified = True
                 self.fill_water_col(i)
-            elif colShips + colEmpty == self.col_values[i]  and colShips != 0:
-                print("filling col", i)
+            elif colShips + colEmpty == self.col_values[i]  and colEmpty != 0:
                 modified = True
                 self.fill_ships_col(i)
-            print(self.board)
 
             #Illegal check
-            #if self.row_values[i] <= rowShips + rowEmpty:
-            #    self.isLegal = False
-            #if self.col_values[i] <= colShips + colEmpty:
-            #    self.isLegal = False
-            print("lap")
-            #print(self.isLegal)
+            if self.row_values[i] > rowShips + rowEmpty:
+                self.isLegal = False
+                print("DEAD END")
+            if self.col_values[i] > colShips + colEmpty:
+                self.isLegal = False
+                print("DEAD END")
             
-        if modified:
+        if modified and self.isLegal:
             self.lineProcesser()
 
     def shipCount(self):
@@ -292,10 +290,11 @@ class Board:
     
     def addShip(self, shipInfo):
         if (shipInfo[2] == self.HORIZONTAL):
-            for i in range(0, shipInfo[3] - 1):
+            print(shipInfo[3])
+            for i in range(0, shipInfo[3]):
                 self.assign(shipInfo[0], shipInfo[1] + i, self.PART)
         if (shipInfo[2] == self.VERTICAL):
-            for i in range(0, shipInfo[3] - 1):
+            for i in range(0, shipInfo[3]):
                 self.assign(shipInfo[0] + i, shipInfo[1], self.PART)
 
     def print_board(self):
@@ -307,6 +306,8 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
+        #with open('t1.txt', 'r') as file:
+        #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
@@ -383,9 +384,12 @@ class Bimaru(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        newState = BimaruState(state.board)
+        print("resulting")
+        print(action)
+        newState = BimaruState(copy.deepcopy(state.board))
         newState.board.addShip(action)
         newState.board.lineProcesser()
+        print(newState.board.print_board())
         return newState
         # [row,col,sentido]
         # new state

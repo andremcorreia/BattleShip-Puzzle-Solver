@@ -5,11 +5,15 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "program.py",
+            "program": "${file}",
             "console": "integratedTerminal",
-            "args": [
-                "<t1.txt"
-            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Python: File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
             "justMyCode": true
         }
     ]
