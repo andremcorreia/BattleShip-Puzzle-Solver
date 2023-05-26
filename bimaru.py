@@ -239,8 +239,6 @@ class Board:
 
             if self.row_values[i] > rowShips + rowEmpty or self.row_values[i] < rowShips:
                 self.isLegal = False
-            if (i == 6):
-                print("ships:", colShips, "void:", colEmpty, self.col_values[i])
             if self.col_values[i] > colShips + colEmpty or self.col_values[i] < colShips:
                 self.isLegal = False
             
@@ -255,12 +253,12 @@ class Board:
                     self.ships[0] -= 1 
                 if self.get_value(row,col) == self.LEFT.upper():
                     i = 1
-                    while (not self.isWater(row,col + i) and col + i < 10):
+                    while (col + i < 10 and not self.isWater(row,col + i)):
                         i += 1
                     self.ships[i - 1] -= 1
                 if self.get_value(row,col) == self.TOP.upper():
                     i = 1
-                    while (not self.isWater(row + i,col) and row + i < 10):
+                    while (row + i < 10 and not self.isWater(row + i,col)):
                         i += 1
                     self.ships[i - 1] -= 1
     
@@ -302,9 +300,6 @@ class Board:
                 self.assign(shipInfo[0] + i, shipInfo[1], self.PART)
             self.assign(shipInfo[0] - 1, shipInfo[1], self.WATER)
             self.assign(shipInfo[0] + shipInfo[3], shipInfo[1], self.WATER)
-
-    def print_board(self):
-        print(self.board)
         
     @staticmethod
     def parse_instance():
@@ -312,9 +307,9 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        with open('t1.txt', 'r') as file:
-            lines = file.readlines()
-        #lines = stdin.readlines()
+        #with open('t1.txt', 'r') as file:                      # for vs Debug
+        #    lines = file.readlines()
+        lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
         board.col_values = list(map(int, lines[1].split()[1:]))
@@ -349,23 +344,17 @@ class Bimaru(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         if (not state.board.isLegal):
-            print("tried to expand ilegal")
             return []
         
         state.board.shipCount()
-        print("remaining ships:", state.board.ships)
-        print(state.board.board)
+        #print("remaining ships:", state.board.ships)
         if (state.board.ships[3] > 0):
-            print(state.board.guess_finder(4))
             return state.board.guess_finder(4) 
         elif (state.board.ships[2] > 0):
-            print(state.board.guess_finder(3))
             return state.board.guess_finder(3)     
         elif (state.board.ships[1] > 0):
-            print(state.board.guess_finder(2))
             return state.board.guess_finder(2)  
         elif (state.board.ships[0] > 0):
-            print(state.board.guess_finder(1))
             return state.board.guess_finder(1) 
         return []
 
@@ -376,7 +365,7 @@ class Bimaru(Problem):
         self.actions(state)."""
         newState = BimaruState(copy.deepcopy(state.board))
         newState.board.addShip(action)
-        print("created:", newState.state_id ,newState.board.isLegal)
+        #print("created:", newState.state_id , "with:", action) #see created children
         return newState
         
 
@@ -386,12 +375,8 @@ class Bimaru(Problem):
         estão preenchidas de acordo com as regras do problema."""
         print("Processing:", state.state_id)
         state.board.lineProcesser()
-        print(state.board.board)
+        #print(state.board.board)           #Debug see board about to be processed
         state.board.shipCount()
-        if (state.board.ships == [0,0,0,0] and state.board.isLegal):
-            print("win")
-        else:
-            print(state.board.ships, state.board.isLegal)
         return state.board.ships == [0,0,0,0] and state.board.isLegal
 
     def h(self, node: Node):
@@ -410,5 +395,4 @@ if __name__ == "__main__":
     game = Bimaru(originalBoard)
     win = depth_first_tree_search(game)
     print(win.state.board.board)
-    print("ayo")
 
