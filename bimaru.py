@@ -244,6 +244,10 @@ class Board:
             
         if modified and self.isLegal:
             self.lineProcesser()
+        #else:
+        #    print("lined")
+        #    print(self.board)
+        #    print()
 
     def shipCount(self):
         self.ships = [4, 3, 2, 1]
@@ -253,14 +257,16 @@ class Board:
                     self.ships[0] -= 1 
                 if self.get_value(row,col) == self.LEFT.upper():
                     i = 1
-                    while (col + i < 10 and not self.isWater(row,col + i)):
+                    while (col + i < 10 and self.isShip(row,col + i) and i < 4):
                         i += 1
-                    self.ships[i - 1] -= 1
+                    if (col + i == 10 or self.isWater(row,col + i)):
+                        self.ships[i - 1] -= 1
                 if self.get_value(row,col) == self.TOP.upper():
                     i = 1
-                    while (row + i < 10 and not self.isWater(row + i,col)):
+                    while (row + i < 10 and self.isShip(row + i,col) and i < 4):
                         i += 1
-                    self.ships[i - 1] -= 1
+                    if (row + i == 10 or self.isWater(row + i,col)):
+                        self.ships[i - 1] -= 1
     
     def guess_finder(self, boatSize: int):
         if(not self.isLegal):
@@ -269,28 +275,27 @@ class Board:
         for i in range(0, 10):
             for j in range(0, 10):
                 #Check rows for available spots
-                if self.get_value(i,j) in [self.UNKNOWN, self.PART]:
+                if (self.get_value(i,j) == self.UNKNOWN or self.isShip(i,j)):
                     c, reached = 1, False
-                    while (j + c < 10 and self.get_value(i,j + c) in [self.UNKNOWN, self.PART] and not reached):
+                    while (j + c < 10 and (self.get_value(i,j + c) == self.UNKNOWN or self.isShip(i,j + c)) and not reached):
                         c += 1
                         if c >= boatSize:
                             reached = True
-                            if (j + c == 10 or not self.isShip(i,j + c)):
+                            if ((j + c == 10 or not self.isShip(i,j + c)) and (self.get_value(i,j) == self.UNKNOWN or self.get_value(i,j + c-1) == self.UNKNOWN)):
                                 res += [[i,j,self.HORIZONTAL,boatSize]]
                 #Check Collums for available spots
                 if self.get_value(j,i) in [self.UNKNOWN, self.PART]:
                     c, reached = 1, False
-                    while (j + c < 10 and self.get_value(j + c,i) in [self.UNKNOWN, self.PART] and not reached):
+                    while (j + c < 10 and (self.get_value(j + c,i) == self.UNKNOWN or self.isShip(j + c,i)) and not reached):
                         c += 1
                         if c >= boatSize:
                             reached = True
-                            if (j + c == 10 or not self.isShip(j + c,i)):
+                            if ((j + c == 10 or not self.isShip(j + c,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN)):
                                 res += [[j,i,self.VERTICAL,boatSize]]
         return res
     
     def addShip(self, shipInfo):
         if (shipInfo[2] == self.HORIZONTAL):
-            print(shipInfo[3])
             for i in range(0, shipInfo[3]):
                 self.assign(shipInfo[0], shipInfo[1] + i, self.PART)
             self.assign(shipInfo[0], shipInfo[1] - 1, self.WATER)
@@ -307,7 +312,7 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        #with open('t1.txt', 'r') as file:                      # for vs Debug
+        #with open('instance01.txt', 'r') as file:                      # for vs Debug
         #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
@@ -344,6 +349,7 @@ class Bimaru(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         if (not state.board.isLegal):
+            #print("ilegal")
             return []
         
         state.board.shipCount()
@@ -373,7 +379,7 @@ class Bimaru(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
-        print("Processing:", state.state_id)
+        #print("Processing:", state.id)
         state.board.lineProcesser()
         #print(state.board.board)           #Debug see board about to be processed
         state.board.shipCount()
