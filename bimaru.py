@@ -181,11 +181,12 @@ class Board:
                 last = i
         return last + 1
 
-    def lineProcesser(self):
+    def boardSimplifier(self):
         if(not self.isLegal):
             return
         modified = False
         self.shipCount()
+
         max = self.biggest_size_available()
         for i in range(10):
             rowShips, colShips, rowEmpty, colEmpty, rowStreak, colStreak = 0,0,0,0,0,0
@@ -279,7 +280,7 @@ class Board:
             self.col_available[i] = self.col_values[i] - colShips
             
         if modified and self.isLegal:
-            self.lineProcesser()
+            self.boardSimplifier()
 
     def shipCount(self):
         # Counts all ships in the board
@@ -367,7 +368,7 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        #with open('test4.txt', 'r') as file:                      # for vs Debug RM
+        #with open('test5.txt', 'r') as file:                      # for vs Debug RM
         #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
@@ -424,8 +425,10 @@ class Bimaru(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
-        state.board.lineProcesser()
+        state.board.boardSimplifier()
         state.board.shipCount()
+        print("finished")
+        print(state.board.board)
         return state.board.ships == [0,0,0,0] and state.board.isLegal
 
     def h(self, node: Node):
