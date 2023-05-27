@@ -190,15 +190,72 @@ class Board:
 
         timeAssign += time.time() - start_f_time
 
+    def biggest_size_available(self) -> int:
+        last = 100 
+        for i in range(4):
+            if self.ships[i] > 0:
+                last = i
+        return last + 1
+
     def lineProcesser(self):
         global timeProcess
         start_f_time = time.time()
+
+
+
         if(not self.isLegal):
             return
         modified = False
+        self.shipCount()
+        max = self.biggest_size_available()
         for i in range(10):
-            rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
+            rowShips, colShips, rowEmpty, colEmpty, rowStreak, colStreak = 0,0,0,0,0,0
             for j in range(10):
+                #Row
+                if self.board[i,j].lower() == self.UNKNOWN:
+                    rowEmpty += 1
+                elif self.board[i,j] not in self.WATER_TILES:
+                    rowStreak += 1
+                    rowShips += 1
+                else:
+                    rowStreak = 0
+
+                if rowStreak == max:
+                    self.assign(i, j + 1, self.WATER)
+                    self.assign(i, j - max, self.WATER)
+                    modified = True
+
+                    
+                #Col
+                if self.board[j,i].lower() == self.UNKNOWN:
+                    colEmpty += 1
+                elif self.board[j,i] not in self.WATER_TILES:
+                    colStreak += 1
+                    colShips += 1
+                else:
+                    colStreak = 0
+
+                if colStreak == max:
+                    self.assign(j + 1, i, self.WATER)
+                    self.assign(j - max, i, self.WATER)
+                    modified = True
+
+                # M Solver
+                if self.board[i,j].lower() == self.MIDDLE:
+                    adjH = self.adjacent_horizontal_values(i,j)
+                    adjV = self.adjacent_vertical_values(i,j)
+                    if self.WATER in adjH or self.HINTWATER in adjH or len(adjH) == 1:
+                        if self.UNKNOWN in adjV:
+                            modified = True
+                            self.assign(i-1,j, self.PART)
+                            self.assign(i+1,j, self.PART)
+                    
+                    if self.WATER in adjV or self.HINTWATER in adjV or len(adjV) == 1:
+                        if self.UNKNOWN in adjH:
+                            modified = True
+                            self.assign(i,j-1, self.PART)
+                            self.assign(i,j+1, self.PART)
+
                 #Part Definer
                 if self.board[i,j].lower() == self.PART and self.UNKNOWN not in self.adjacent_horizontal_values(i,j) + self.adjacent_vertical_values(i,j):
                     top     = i == 0 or self.isWater(i-1, j)
@@ -217,34 +274,6 @@ class Board:
                         self.board[i,j] = self.CIRCLE
                     elif (left and right) or (top and bottom):
                         self.board[i,j] = self.MIDDLE
-                #end
-
-                #Row
-                if self.board[i,j].lower() == self.UNKNOWN:
-                    rowEmpty += 1
-                elif self.board[i,j] not in self.WATER_TILES:
-                    rowShips += 1
-                #Col
-                if self.board[j,i].lower() == self.UNKNOWN:
-                    colEmpty += 1
-                elif self.board[j,i] not in self.WATER_TILES:
-                    colShips += 1
-
-                # M Solver
-                if self.board[i,j].lower() == self.MIDDLE:
-                    adjH = self.adjacent_horizontal_values(i,j)
-                    adjV = self.adjacent_vertical_values(i,j)
-                    if self.WATER in adjH or self.HINTWATER in adjH or len(adjH) == 1:
-                        if self.UNKNOWN in adjV:
-                            modified = True
-                            self.assign(i-1,j, self.PART)
-                            self.assign(i+1,j, self.PART)
-                    
-                    if self.WATER in adjV or self.HINTWATER in adjV or len(adjV) == 1:
-                        if self.UNKNOWN in adjH:
-                            modified = True
-                            self.assign(i,j-1, self.PART)
-                            self.assign(i,j+1, self.PART)
 
             # Filler Row    
             if rowShips == self.row_values[i] and rowEmpty != 0:
@@ -366,7 +395,7 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        #with open('instance01.txt', 'r') as file:                      # for vs Debug
+        #with open('test1.txt', 'r') as file:                      # for vs Debug
         #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
@@ -447,7 +476,6 @@ class Bimaru(Problem):
 
 
 if __name__ == "__main__":
-    """# TODO:
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,

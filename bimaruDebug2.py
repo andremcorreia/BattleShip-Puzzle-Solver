@@ -19,6 +19,17 @@ from search import (
     recursive_best_first_search,
 )
 
+import time #RM
+start_time = time.time()
+timeProcess = 0
+timeAssign = 0
+timeAddShip = 0
+timeGuess = 0
+timeCount = 0
+
+nStatesCreated = 0
+nStatesExplored = 0
+
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
     WATER       = "."
@@ -133,6 +144,8 @@ class Board:
             self.board[row, col+1] = self.WATER
     
     def assign(self,  row: int, col: int, type: str):
+        global timeAssign
+        start_f_time = time.time() #RM
         if row < 0 or row > 9 or col < 0 or col > 9:
             return
         if (type == self.HINTWATER):
@@ -173,13 +186,27 @@ class Board:
                 self.set_value(row, col - 1, self.WATER)
             self.assign(row, col+1, self.PART)
         self.set_value(row, col, type)
+        timeAssign += time.time() - start_f_time #RM
 
+    def biggest_size_available(self) -> int: #?
+        last = 100 
+        for i in range(4):
+            if self.ships[i] > 0:
+                last = i
+        return last + 1
+    
     def lineProcesser(self):
+        global timeProcess
+        start_f_time = time.time() #RM
+        #print(self.board)
+        #print()
         if(not self.isLegal):
             return
         modified = False
+        self.shipCount()
+        max = self.biggest_size_available()
         for i in range(10):
-            rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
+            rowShips, colShips, rowEmpty, colEmpty, rowStreak, colStreak = 0,0,0,0,0,0
             for j in range(10):
                 #Part Definer
                 if self.board[i,j].lower() == self.PART and self.UNKNOWN not in self.adjacent_horizontal_values(i,j) + self.adjacent_vertical_values(i,j):
@@ -199,18 +226,35 @@ class Board:
                         self.board[i,j] = self.CIRCLE
                     elif (left and right) or (top and bottom):
                         self.board[i,j] = self.MIDDLE
-                #end
 
                 #Row
                 if self.board[i,j].lower() == self.UNKNOWN:
                     rowEmpty += 1
                 elif self.board[i,j] not in self.WATER_TILES:
+                    rowStreak += 1
                     rowShips += 1
+                else:
+                    rowStreak = 0
+
+                if rowStreak == max and j + 1 < 10 and self.board[i,j + 1].lower() == self.UNKNOWN:
+                    self.assign(i, j + 1, self.WATER)
+                    self.assign(i, j - max, self.WATER)
+                    modified = True
+
+                    
                 #Col
                 if self.board[j,i].lower() == self.UNKNOWN:
                     colEmpty += 1
                 elif self.board[j,i] not in self.WATER_TILES:
+                    colStreak += 1
                     colShips += 1
+                else:
+                    colStreak = 0
+
+                if colStreak == max and j + 1 < 10 and self.board[j + 1, i].lower() == self.UNKNOWN:
+                    self.assign(j + 1, i, self.WATER)
+                    self.assign(j - max, i, self.WATER)
+                    modified = True
 
                 # M Solver
                 if self.board[i,j].lower() == self.MIDDLE:
@@ -227,6 +271,25 @@ class Board:
                             modified = True
                             self.assign(i,j-1, self.PART)
                             self.assign(i,j+1, self.PART)
+                
+                #Part Definer
+                if self.board[i,j].lower() == self.PART and self.UNKNOWN not in self.adjacent_horizontal_values(i,j) + self.adjacent_vertical_values(i,j):
+                    top     = i == 0 or self.isWater(i-1, j)
+                    bottom  = i == 9 or self.isWater(i+1, j)
+                    right   = j == 9 or self.isWater(i, j+1)
+                    left    = j == 0 or self.isWater(i, j-1)
+                    if top and not bottom:
+                        self.board[i,j] = self.TOP
+                    elif bottom and not top:
+                        self.board[i,j] = self.BOTTOM
+                    elif right and not left:
+                        self.board[i,j] = self.RIGHT 
+                    elif left and not right:
+                        self.board[i,j] = self.LEFT
+                    elif left and right and top and bottom:
+                        self.board[i,j] = self.CIRCLE
+                    elif (left and right) or (top and bottom):
+                        self.board[i,j] = self.MIDDLE
 
             # Filler Row    
             if rowShips == self.row_values[i] and rowEmpty != 0:
@@ -254,8 +317,11 @@ class Board:
             
         if modified and self.isLegal:
             self.lineProcesser()
+        timeProcess += time.time() - start_f_time #RM
 
     def shipCount(self):
+        global timeCount
+        start_f_time = time.time() #RM
         # Counts all ships in the board
         self.ships = [4, 3, 2, 1]
         for row in range(10):
@@ -276,8 +342,10 @@ class Board:
                         i += 1
                     if (row + i == 10 or self.isWater(row + i,col)):
                         self.ships[i - 1] -= 1
-    
+        timeCount += time.time() - start_f_time #RM
     def actionFinder(self, boatSize: int):
+        global timeGuess
+        start_f_time = time.time() #RM
         # Finds possible positions for ships
         if(not self.isLegal):
             return []
@@ -311,9 +379,12 @@ class Board:
                             reached = True
                             if ((j + c == 10 or not self.isShip(j + c,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN) and self.col_available[i] >= boatSize - alreadyIn):
                                 res += [[j,i,self.VERTICAL,boatSize]]
+        timeGuess += time.time() - start_f_time #RM
         return res
     
     def addShip(self, shipInfo):
+        global timeAddShip
+        start_f_time = time.time() #RM
         # Adds an entire ship on the board
         if (shipInfo[2] == self.HORIZONTAL):
             for i in range(0, shipInfo[3]):
@@ -325,7 +396,8 @@ class Board:
                 self.assign(shipInfo[0] + i, shipInfo[1], self.PART)
             self.assign(shipInfo[0] - 1, shipInfo[1], self.WATER)
             self.assign(shipInfo[0] + shipInfo[3], shipInfo[1], self.WATER)
-    
+        timeAddShip += time.time() - start_f_time #RM
+
     def __str__(self):
         res = ""
         for i, row in enumerate(self.board):
@@ -341,7 +413,9 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        lines = stdin.readlines()
+        with open('instance10.txt', 'r') as file:                      # for vs Debug
+            lines = file.readlines()
+        #lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
         board.col_values = list(map(int, lines[1].split()[1:]))
@@ -411,5 +485,14 @@ if __name__ == "__main__":
     finalNode = depth_first_tree_search(game)
     print(finalNode.state.board)
 
-
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Time simplyfing:", timeProcess)
+    print("Time assigning:", timeAssign)
+    print("Time placing ships:", timeAddShip)
+    print("Time counting:", timeCount)
+    print("Time guessing:", timeGuess)
+    print("created ", nStatesCreated, "states")
+    print("explored ", nStatesExplored, "states")
 
