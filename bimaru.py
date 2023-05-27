@@ -174,12 +174,21 @@ class Board:
             self.assign(row, col+1, self.PART)
         self.set_value(row, col, type)
 
+    def biggest_size_available(self) -> int: #?
+        last = 100 
+        for i in range(4):
+            if self.ships[i] > 0:
+                last = i
+        return last + 1
+
     def lineProcesser(self):
         if(not self.isLegal):
             return
         modified = False
+        self.shipCount()
+        max = self.biggest_size_available()
         for i in range(10):
-            rowShips, colShips, rowEmpty, colEmpty = 0,0,0,0
+            rowShips, colShips, rowEmpty, colEmpty, rowStreak, colStreak = 0,0,0,0,0,0
             for j in range(10):
                 #Part Definer
                 if self.board[i,j].lower() == self.PART and self.UNKNOWN not in self.adjacent_horizontal_values(i,j) + self.adjacent_vertical_values(i,j):
@@ -205,12 +214,29 @@ class Board:
                 if self.board[i,j].lower() == self.UNKNOWN:
                     rowEmpty += 1
                 elif self.board[i,j] not in self.WATER_TILES:
+                    rowStreak += 1
                     rowShips += 1
+                else:
+                    rowStreak = 0
+
+                if rowStreak == max and (j == 9 or self.board[i,j + 1].lower() == self.UNKNOWN) and (j == 0 or self.board[i, j - max].lower() == self.UNKNOWN):
+                    self.assign(i, j + 1, self.WATER)
+                    self.assign(i, j - max, self.WATER)
+                    modified = True
+
                 #Col
                 if self.board[j,i].lower() == self.UNKNOWN:
                     colEmpty += 1
                 elif self.board[j,i] not in self.WATER_TILES:
+                    colStreak += 1
                     colShips += 1
+                else:
+                    colStreak = 0
+
+                if colStreak == max and (j == 9 or self.board[j + 1, i].lower() == self.UNKNOWN) and (j == 0 or self.board[j - max, i].lower() == self.UNKNOWN):
+                    self.assign(j + 1, i, self.WATER)
+                    self.assign(j - max, i, self.WATER)
+                    modified = True
 
                 # M Solver
                 if self.board[i,j].lower() == self.MIDDLE:
@@ -341,6 +367,8 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
+        #with open('test4.txt', 'r') as file:                      # for vs Debug RM
+        #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
