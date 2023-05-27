@@ -6,6 +6,7 @@
 # 00000 Nome1
 # 00000 Nome2
 
+import time
 import copy
 import numpy as np
 from sys import stdin
@@ -18,6 +19,17 @@ from search import (
     greedy_search,
     recursive_best_first_search,
 )
+
+start_time = time.time()
+timeProcess = 0
+timeAssign = 0
+timeAddShip = 0
+timeGuess = 0
+timeCount = 0
+
+nStatesCreated = 0
+nStatesExplored = 0
+
 
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
@@ -133,6 +145,8 @@ class Board:
             self.board[row, col+1] = self.WATER
     
     def assign(self,  row: int, col: int, type: str):
+        global timeAssign
+        start_f_time = time.time()
         if row < 0 or row > 9 or col < 0 or col > 9:
             return
         if (type == self.HINTWATER):
@@ -174,7 +188,11 @@ class Board:
             self.assign(row, col+1, self.PART)
         self.set_value(row, col, type)
 
+        timeAssign += time.time() - start_f_time
+
     def lineProcesser(self):
+        global timeProcess
+        start_f_time = time.time()
         if(not self.isLegal):
             return
         modified = False
@@ -254,9 +272,11 @@ class Board:
             
         if modified and self.isLegal:
             self.lineProcesser()
+        timeProcess += time.time() - start_f_time
 
     def shipCount(self):
-        # Counts all ships in the board
+        global timeCount
+        start_f_time = time.time()
         self.ships = [4, 3, 2, 1]
         for row in range(10):
             for col in range(10):
@@ -276,9 +296,11 @@ class Board:
                         i += 1
                     if (row + i == 10 or self.isWater(row + i,col)):
                         self.ships[i - 1] -= 1
+        timeCount += time.time() - start_f_time
     
-    def actionFinder(self, boatSize: int):
-        # Finds possible positions for ships
+    def guess_finder(self, boatSize: int):
+        global timeGuess
+        start_f_time = time.time()
         if(not self.isLegal):
             return []
         res = []
@@ -311,10 +333,12 @@ class Board:
                             reached = True
                             if ((j + c == 10 or not self.isShip(j + c,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN) and self.col_available[i] >= boatSize - alreadyIn):
                                 res += [[j,i,self.VERTICAL,boatSize]]
+        timeGuess += time.time() - start_f_time
         return res
     
     def addShip(self, shipInfo):
-        # Adds an entire ship on the board
+        global timeAddShip
+        start_f_time = time.time()
         if (shipInfo[2] == self.HORIZONTAL):
             for i in range(0, shipInfo[3]):
                 self.assign(shipInfo[0], shipInfo[1] + i, self.PART)
@@ -325,6 +349,7 @@ class Board:
                 self.assign(shipInfo[0] + i, shipInfo[1], self.PART)
             self.assign(shipInfo[0] - 1, shipInfo[1], self.WATER)
             self.assign(shipInfo[0] + shipInfo[3], shipInfo[1], self.WATER)
+        timeAddShip += time.time() - start_f_time
     
     def __str__(self):
         res = ""
@@ -341,6 +366,8 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
+        #with open('instance01.txt', 'r') as file:                      # for vs Debug
+        #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
@@ -373,13 +400,19 @@ class Bimaru(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         if (not state.board.isLegal):
+            #print("ilegal")
             return []
         
         state.board.shipCount()
-
-        for size in (4,3,2,1):
-            if state.board.ships[size - 1] > 0:
-                return state.board.actionFinder(size)
+        #print("remaining ships:", state.board.ships)
+        if (state.board.ships[3] > 0):
+            return state.board.guess_finder(4) 
+        elif (state.board.ships[2] > 0):
+            return state.board.guess_finder(3)     
+        elif (state.board.ships[1] > 0):
+            return state.board.guess_finder(2)  
+        elif (state.board.ships[0] > 0):
+            return state.board.guess_finder(1) 
         return []
 
     def result(self, state: BimaruState, action):
@@ -387,8 +420,11 @@ class Bimaru(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
+        global nStatesCreated
         newState = BimaruState(copy.deepcopy(state.board))
         newState.board.addShip(action)
+        #print("created:", newState.state_id , "with:", action) #see created children
+        nStatesCreated += 1
         return newState
         
 
@@ -396,20 +432,40 @@ class Bimaru(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas de acordo com as regras do problema."""
+        #print("Processing:", state.id)
+        global nStatesExplored
         state.board.lineProcesser()
+        #print(state.board.board)           #Debug see board about to be processed
         state.board.shipCount()
+        nStatesExplored += 1
         return state.board.ships == [0,0,0,0] and state.board.isLegal
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
+        # TODO
         pass
 
 
 if __name__ == "__main__":
+    """# TODO:
+    # Ler o ficheiro do standard input,
+    # Usar uma técnica de procura para resolver a instância,
+    # Retirar a solução a partir do nó resultante,
+    # Imprimir para o standard output no formato indicado."""
     originalBoard = Board.parse_instance()
     game = Bimaru(originalBoard)
-    finalNode = depth_first_tree_search(game)
-    print(finalNode.state.board)
+    win = depth_first_tree_search(game)
+    print(win.state.board)
 
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Time simplyfing:", timeProcess)
+    print("Time assigning:", timeAssign)
+    print("Time placing ships:", timeAddShip)
+    print("Time counting:", timeCount)
+    print("Time guessing:", timeGuess)
+    print("created ", nStatesCreated, "states")
+    print("explored ", nStatesExplored, "states")
 
 
