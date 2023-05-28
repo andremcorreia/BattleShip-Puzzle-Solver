@@ -186,7 +186,6 @@ class Board:
             return
         modified = False
         self.shipCount()
-
         max = self.biggest_size_available()
         for i in range(10):
             rowShips, colShips, rowEmpty, colEmpty, rowStreak, colStreak = 0,0,0,0,0,0
@@ -213,6 +212,7 @@ class Board:
 
                 #Row
                 if self.board[i,j].lower() == self.UNKNOWN:
+                    rowStreak = 0
                     rowEmpty += 1
                 elif self.board[i,j] not in self.WATER_TILES:
                     rowStreak += 1
@@ -220,13 +220,21 @@ class Board:
                 else:
                     rowStreak = 0
 
-                if rowStreak == max and (j == 9 or self.board[i,j + 1].lower() == self.UNKNOWN) and (j == 0 or self.board[i, j - max].lower() == self.UNKNOWN):
-                    self.assign(i, j + 1, self.WATER)
-                    self.assign(i, j - max, self.WATER)
-                    modified = True
+                if rowStreak == max and (j == 9 or self.board[i,j + 1].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[i, j - max].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]):
+                    check = []
+                    if j + 1 < 10:
+                        check += self.board[i,j + 1]
+                    if j - max >= 0:
+                        check += self.board[i, j - max]
+
+                    if self.UNKNOWN in check:                    
+                        self.assign(i, j + 1, self.WATER)
+                        self.assign(i, j - max, self.WATER)
+                        modified = True
 
                 #Col
                 if self.board[j,i].lower() == self.UNKNOWN:
+                    colStreak = 0
                     colEmpty += 1
                 elif self.board[j,i] not in self.WATER_TILES:
                     colStreak += 1
@@ -234,10 +242,16 @@ class Board:
                 else:
                     colStreak = 0
 
-                if colStreak == max and (j == 9 or self.board[j + 1, i].lower() == self.UNKNOWN) and (j == 0 or self.board[j - max, i].lower() == self.UNKNOWN):
-                    self.assign(j + 1, i, self.WATER)
-                    self.assign(j - max, i, self.WATER)
-                    modified = True
+                if colStreak == max and (j == 9 or self.board[j + 1, i].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[j - max, i].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]):
+                    check = []
+                    if j + 1 < 10:
+                        check += self.board[j + 1, i]
+                    if j - max >= 0:
+                        check += self.board[j - max, i]
+                    if self.UNKNOWN in check:
+                        self.assign(j + 1, i, self.WATER)
+                        self.assign(j - max, i, self.WATER)
+                        modified = True
 
                 # M Solver
                 if self.board[i,j].lower() == self.MIDDLE:
@@ -309,35 +323,43 @@ class Board:
         if(not self.isLegal):
             return []
         res = []
-        for i in range(10):
-            for j in range(10):
-                #Check rows for available spots
-                alreadyIn = 0
-                if (self.get_value(i,j) == self.UNKNOWN or self.isShip(i,j)):
-                    if self.get_value(i,j) != self.UNKNOWN:
-                        alreadyIn += 1
-                    c, reached = 1, False
-                    while (j + c < 10 and (self.get_value(i,j + c) == self.UNKNOWN or self.isShip(i,j + c)) and not reached):
-                        if self.get_value(i,j + c) != self.UNKNOWN:
+        if boatSize > 1:
+            for i in range(10):
+                for j in range(10):
+                    #Check rows for available spots
+                    alreadyIn = 0
+                    if (self.get_value(i,j) == self.UNKNOWN or self.isShip(i,j)):
+                        if self.get_value(i,j) != self.UNKNOWN:
                             alreadyIn += 1
-                        c += 1
-                        if c >= boatSize:
-                            reached = True
-                            if ((j + c == 10 or not self.isShip(i,j + c)) and (self.get_value(i,j) == self.UNKNOWN or self.get_value(i,j + c-1) == self.UNKNOWN) and self.row_available[i] >= boatSize - alreadyIn):
-                                res += [[i,j,self.HORIZONTAL,boatSize]]
-                #Check Collums for available spots
-                if self.get_value(j,i) == self.UNKNOWN or self.isShip(j,i):
-                    if self.get_value(j,i) != self.UNKNOWN:
-                        alreadyIn += 1
-                    c, reached = 1, False
-                    while (j + c < 10 and (self.get_value(j + c,i) == self.UNKNOWN or self.isShip(j + c,i)) and not reached):
-                        if self.get_value(j + c,i) != self.UNKNOWN:
+                        c, reached = 1, False
+                        while (j + c < 10 and (self.get_value(i,j + c) == self.UNKNOWN or self.isShip(i,j + c)) and not reached):
+                            if self.get_value(i,j + c) != self.UNKNOWN:
+                                alreadyIn += 1
+                            c += 1
+                            if c >= boatSize:
+                                reached = True
+                                if ((j + c == 10 or not self.isShip(i,j + c)) and (j == 0 or not self.isShip(i, j - 1)) and (self.get_value(i,j) == self.UNKNOWN or self.get_value(i,j + c-1) == self.UNKNOWN) and self.row_available[i] >= boatSize - alreadyIn):
+                                    res += [[i,j,self.HORIZONTAL,boatSize]]
+                    #Check Collums for available spots
+                    if self.get_value(j,i) == self.UNKNOWN or self.isShip(j,i):
+                        if self.get_value(j,i) != self.UNKNOWN:
                             alreadyIn += 1
-                        c += 1
-                        if c >= boatSize:
-                            reached = True
-                            if ((j + c == 10 or not self.isShip(j + c,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN) and self.col_available[i] >= boatSize - alreadyIn):
-                                res += [[j,i,self.VERTICAL,boatSize]]
+                        c, reached = 1, False
+                        while (j + c < 10 and (self.get_value(j + c,i) == self.UNKNOWN or self.isShip(j + c,i)) and not reached):
+                            if self.get_value(j + c,i) != self.UNKNOWN:
+                                alreadyIn += 1
+                            c += 1
+                            if c >= boatSize:
+                                reached = True
+                                if ((j + c == 10 or not self.isShip(j + c,i)) and (j == 0 or not self.isShip(j - 1,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN) and self.col_available[i] >= boatSize - alreadyIn):
+                                    res += [[j,i,self.VERTICAL,boatSize]]
+        if boatSize == 1:
+            for i in range(10):
+                for j in range(10):
+                    #Check rows for available spots
+                    alreadyIn = 0
+                    if (self.get_value(i,j) == self.UNKNOWN):
+                        res += [[i,j,self.HORIZONTAL,boatSize]]
         return res
     
     def addShip(self, shipInfo):
@@ -368,8 +390,6 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
-        #with open('test5.txt', 'r') as file:                      # for vs Debug RM
-        #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
@@ -427,8 +447,6 @@ class Bimaru(Problem):
         estão preenchidas de acordo com as regras do problema."""
         state.board.boardSimplifier()
         state.board.shipCount()
-        print("finished")
-        print(state.board.board)
         return state.board.ships == [0,0,0,0] and state.board.isLegal
 
     def h(self, node: Node):
