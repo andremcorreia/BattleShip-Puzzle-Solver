@@ -1,0 +1,22 @@
+ROW    1 3 4 1 0 0 5 0 2 4
+COLUMN    2 4 3 2 1 3 1 2 1 1
+19
+HINT    6 8 W
+HINT    5 0 W
+HINT    7 3 W
+HINT    6 2 M
+HINT    6 9 W
+HINT    4 8 W
+HINT    5 9 W
+HINT    5 1 W
+HINT    7 9 W
+HINT    6 3 R
+HINT    1 4 W
+HINT    1 7 W
+HINT    6 5 W
+HINT    1 1 T
+HINT    0 8 W
+HINT    0 8 W
+HINT    8 5 W
+HINT    2 3 W
+HINT    1 5 B

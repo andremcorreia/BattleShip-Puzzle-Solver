@@ -58,7 +58,7 @@ class Board:
         if self.board[row,col] != self.HINTWATER:
             self.board[row,col] = value
         
-    def adjacent_vertical_values(self, row: int, col: int):# -> (str, str):
+    def adjacent_vertical_values(self, row: int, col: int):
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente."""
         res = []
@@ -68,7 +68,7 @@ class Board:
             res += [self.get_value(row + 1, col)]
         return res
 
-    def adjacent_horizontal_values(self, row: int, col: int):# -> (str, str):
+    def adjacent_horizontal_values(self, row: int, col: int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
         res = []
@@ -142,7 +142,7 @@ class Board:
         if self.board[row,col] != self.UNKNOWN and self.board[row,col] != type and not type.isupper():
             return False
         
-        if type.lower() != self.WATER and type.lower() != self.HINTWATER:
+        if type.lower() != self.WATER and type != self.HINTWATER:
             self.water_diagonals(row, col)
 
         if type.lower() == self.CIRCLE:
@@ -175,7 +175,7 @@ class Board:
         self.set_value(row, col, type)
 
     def biggest_size_available(self) -> int: #?
-        last = 100 
+        last = 0 
         for i in range(4):
             if self.ships[i] > 0:
                 last = i
@@ -198,12 +198,14 @@ class Board:
                     left    = j == 0 or self.isWater(i, j-1)
                     if top and not bottom:
                         self.board[i,j] = self.TOP
+                        modified = True
                     elif bottom and not top:
                         self.board[i,j] = self.BOTTOM
                     elif right and not left:
                         self.board[i,j] = self.RIGHT 
                     elif left and not right:
                         self.board[i,j] = self.LEFT
+                        modified = True
                     elif left and right and top and bottom:
                         self.board[i,j] = self.CIRCLE
                     elif (left and right) or (top and bottom):
@@ -211,7 +213,7 @@ class Board:
                 #end
 
                 #Row
-                if self.board[i,j].lower() == self.UNKNOWN:
+                if self.board[i,j] == self.UNKNOWN:
                     rowStreak = 0
                     rowEmpty += 1
                 elif self.board[i,j] not in self.WATER_TILES:
@@ -220,7 +222,7 @@ class Board:
                 else:
                     rowStreak = 0
 
-                if rowStreak == max and (j == 9 or self.board[i,j + 1].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[i, j - max].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]):
+                if rowStreak == max and (j == 9 or self.board[i,j + 1] in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[i, j - max] in [self.UNKNOWN, self.WATER, self.HINTWATER]):
                     check = []
                     if j + 1 < 10:
                         check += self.board[i,j + 1]
@@ -242,7 +244,7 @@ class Board:
                 else:
                     colStreak = 0
 
-                if colStreak == max and (j == 9 or self.board[j + 1, i].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[j - max, i].lower() in [self.UNKNOWN, self.WATER, self.HINTWATER]):
+                if colStreak == max and (j == 9 or self.board[j + 1, i] in [self.UNKNOWN, self.WATER, self.HINTWATER]) and (j == 0 or self.board[j - max, i] in [self.UNKNOWN, self.WATER, self.HINTWATER]):
                     check = []
                     if j + 1 < 10:
                         check += self.board[j + 1, i]
@@ -338,7 +340,7 @@ class Board:
                             c += 1
                             if c >= boatSize:
                                 reached = True
-                                if ((j + c == 10 or not self.isShip(i,j + c)) and (j == 0 or not self.isShip(i, j - 1)) and (self.get_value(i,j) == self.UNKNOWN or self.get_value(i,j + c-1) == self.UNKNOWN) and self.row_available[i] >= boatSize - alreadyIn):
+                                if ((j + c == 10 or not self.isShip(i,j + c)) and (j == 0 or not self.isShip(i, j - 1)) and (self.get_value(i,j) == self.UNKNOWN or self.get_value(i,j + c-1) == self.UNKNOWN or alreadyIn < c) and self.row_available[i] >= boatSize - alreadyIn):
                                     res += [[i,j,self.HORIZONTAL,boatSize]]
                     #Check Collums for available spots
                     if self.get_value(j,i) == self.UNKNOWN or self.isShip(j,i):
@@ -351,7 +353,7 @@ class Board:
                             c += 1
                             if c >= boatSize:
                                 reached = True
-                                if ((j + c == 10 or not self.isShip(j + c,i)) and (j == 0 or not self.isShip(j - 1,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN) and self.col_available[i] >= boatSize - alreadyIn):
+                                if ((j + c == 10 or not self.isShip(j + c,i)) and (j == 0 or not self.isShip(j - 1,i)) and (self.get_value(j,i) == self.UNKNOWN or self.get_value(j + c-1,i) == self.UNKNOWN or alreadyIn < c) and self.col_available[i] >= boatSize - alreadyIn):
                                     res += [[j,i,self.VERTICAL,boatSize]]
         if boatSize == 1:
             for i in range(10):
