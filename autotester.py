@@ -107,7 +107,7 @@ def main() -> None:
 
     def signal_handler(sig, frame):
         print("\nProgram stopped by user.")
-        print("Total tests run: 10873")
+        print(f"Total tests run: {test_count}")
         exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)

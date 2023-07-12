@@ -1,8 +1,0 @@
-Tester: metam os paths para as pastas de testes e resultados e para o bimaru.py
-Privado - Testes: testes privados que podem ter varias solucoes porque sao aleatorios
-* easy - tem 5 a 12 hints
-* medium - tem 3 a 5 hints
-* hard - tem 1 a 2 hints
-* impossible - tem 0 hints
-
-By: Eduardo Pedrosa, 103600

@@ -1,11 +1,3 @@
-# bimaru.py: Template para implementação do projeto de Inteligência Artificial 2022/2023.
-# Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
-# Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
-
-# Grupo 12:
-# 102666 André Correia
-# 103333 João Trocado
-
 import copy
 import numpy as np
 from sys import stdin
@@ -20,7 +12,7 @@ from search import (
 )
 
 class Board:
-    """Representação interna de um tabuleiro de Bimaru."""
+    """Internal Representation of a Bimaru Board."""
     WATER       = "."
     HINTWATER   = "W"
     CIRCLE      = "c"
@@ -392,6 +384,8 @@ class Board:
         e retorna uma instância da classe Board.
         """
         board = Board()
+        #with open('instances/instance10.txt', 'r') as file:                      # for vs Debug
+        #    lines = file.readlines()
         lines = stdin.readlines()
         # Parse the row and column values
         board.row_values = list(map(int, lines[0].split()[1:]))
